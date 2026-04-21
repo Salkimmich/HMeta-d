@@ -1,6 +1,5 @@
 (ns hmeta-d.sampler
-  (:require [fastmath.random :as r]
-            [fastmath.stats :as stats]))
+  (:require [fastmath.random :as r]))
 
 ;; MATLAB: type-2 likelihood equations live inside fit_meta_d_mcmc.m / JAGS model.
 ;; Python:  phase2_sampler.py makes them explicit functions over dict parameters.
@@ -21,20 +20,21 @@
   [meta-d c1 c2 nratings]
   (let [s1-mu (/ (- meta-d) 2.0)
         s2-mu (/ meta-d 2.0)
-        c-area-rs2 (- 1.0 (stats/cdf-normal c1 {:mu s2-mu :sd 1.0}))
-        i-area-rs2 (- 1.0 (stats/cdf-normal c1 {:mu s1-mu :sd 1.0}))
-        c-area-rs1 (stats/cdf-normal c1 {:mu s1-mu :sd 1.0})
-        i-area-rs1 (stats/cdf-normal c1 {:mu s2-mu :sd 1.0})
+        cdf (fn [x mu sd] (r/cdf (r/distribution :normal {:mu mu :sd sd}) x))
+        c-area-rs2 (- 1.0 (cdf c1 s2-mu 1.0))
+        i-area-rs2 (- 1.0 (cdf c1 s1-mu 1.0))
+        c-area-rs1 (cdf c1 s1-mu 1.0)
+        i-area-rs1 (cdf c1 s2-mu 1.0)
         t2c1 (build-t2-criteria c1 c2 nratings)]
     (if (<= (min c-area-rs2 i-area-rs2 c-area-rs1 i-area-rs1) 0.0)
       {:far-s1 [] :hr-s1 [] :far-s2 [] :hr-s2 []}
       (reduce (fn [acc i]
                 (let [lower (nth t2c1 (- nratings i 1))
                       upper (nth t2c1 (+ (- nratings 2) i))
-                      i-far-area-rs2 (- 1.0 (stats/cdf-normal upper {:mu s1-mu :sd 1.0}))
-                      c-hr-area-rs2 (- 1.0 (stats/cdf-normal upper {:mu s2-mu :sd 1.0}))
-                      i-far-area-rs1 (stats/cdf-normal lower {:mu s2-mu :sd 1.0})
-                      c-hr-area-rs1 (stats/cdf-normal lower {:mu s1-mu :sd 1.0})]
+                      i-far-area-rs2 (- 1.0 (cdf upper s1-mu 1.0))
+                      c-hr-area-rs2 (- 1.0 (cdf upper s2-mu 1.0))
+                      i-far-area-rs1 (cdf lower s2-mu 1.0)
+                      c-hr-area-rs1 (cdf lower s1-mu 1.0)]
                   (-> acc
                       (update :far-s2 conj (/ i-far-area-rs2 i-area-rs2))
                       (update :hr-s2 conj (/ c-hr-area-rs2 c-area-rs2))
@@ -97,8 +97,9 @@
   [params data]
   (let [meta-d (:meta-d params)
         c2 (:c2 params)
-        meta-prior (Math/log (max 1e-300 (stats/pdf-normal meta-d {:mu (:d1 data) :sd 2.0})))
-        c2-prior (reduce + (map #(Math/log (max 1e-300 (stats/pdf-normal % {:mu 0.5 :sd 1.0}))) c2))]
+        normal-pdf (fn [x mu sd] (r/pdf (r/distribution :normal {:mu mu :sd sd}) x))
+        meta-prior (Math/log (max 1e-300 (normal-pdf meta-d (:d1 data) 2.0)))
+        c2-prior (reduce + (map #(Math/log (max 1e-300 (normal-pdf % 0.5 1.0))) c2))]
     (+ meta-prior c2-prior)))
 
 (defn mh-chain
