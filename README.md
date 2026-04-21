@@ -1,41 +1,71 @@
-HMeta-d
-===
+# HMeta-d Translation Lab
 
-**Hierarchical meta-d' model (HMeta-d)**
+This repository ports HMeta-d across three language generations (MATLAB -> Python -> Clojure) as a functional programming teaching vehicle. The original methodological reference is Fleming (2017), which introduces hierarchical Bayesian estimation of metacognitive efficiency ([doi:10.1093/nc/nix007](https://doi.org/10.1093/nc/nix007)).
 
-Steve Fleming
-stephen.fleming@ucl.ac.uk 
+Moving from MATLAB to Python teaches the shift from opaque external model execution (JAGS + imperative scripts) to explicit functions and inspectable data structures. In this repository, Phase 1 and Phase 2 make SDT and MCMC state visible instead of hidden behind a JAGS call.
 
-This MATLAB toolbox implements the meta-d’ model (Maniscalco & Lau, 2012) in a hierarchical Bayesian framework using Matlab and JAGS, a program for conducting MCMC inference on arbitrary Bayesian models. A paper with more details on the method and the advantages of estimating meta-d’ in a hierarchal Bayesian framework is available here https://academic.oup.com/nc/article/doi/10.1093/nc/nix007/3748261/HMeta-d-hierarchical-Bayesian-estimation-of.
+Moving from Python to Clojure teaches a second shift: from object-oriented containers toward uniform immutable data and transformations. The model specification becomes a plain EDN map that can be modified with `assoc-in`, reduced over with `reduce-kv`, and serialized/deserialized without custom code.
 
-For a more general introduction to Bayesian models of cognition see Lee & Wagenmakers, Bayesian Cognitive Modeling: A Practical Course http://bayesmodels.com/
+Teaching annotation pattern used in implementation comments:
 
-The model builds on work by Michael Lee on Bayesian estimation of Type 1 SDT parameters: https://link.springer.com/article/10.3758/BRM.40.2.450 
+```text
+MATLAB: <what MATLAB does here, what file>
+Python: <what this introduces beyond MATLAB>
+Clojure: <what this adds beyond Python>
+```
 
-The code is designed to work “out of the box” without much coding on the part of the user, and it receives data in the same format as Maniscalco & Lau’s toolbox, allowing easy switching and comparison between the two.
+## Repository Structure
 
-1) To get started, you need to first ensure JAGS (an MCMC language similar to BUGS) is installed on your machine. See here for further details:
+```text
+.
+├── .github/workflows/
+├── CPC_metacog_tutorial/
+├── Matlab/
+├── R/
+├── docs/
+├── python/
+│   ├── phase1_sdt.py
+│   ├── phase2_sampler.py
+│   ├── phase3_hierarchical.py
+│   ├── test_phase1_sdt.py
+│   ├── test_phase2_sampler.py
+│   └── test_phase3_hierarchical.py
+├── src/hmeta_d/
+│   ├── sdt.clj
+│   ├── sampler.clj
+│   └── hierarchical.clj
+└── test/hmeta_d/
+    ├── sdt_test.clj
+    ├── sampler_test.clj
+    ├── hierarchical_test.clj
+    └── test_runner.clj
+```
 
-http://mcmc-jags.sourceforge.net/
+## Running The Code
 
-**Note that there are re compatibility issues between matjags and JAGS 4.X To run the MATLAB code you will need to install JAGS 3.4.0 rather than the latest version.** The model files work fine with JAGS 4.X when called from R with rjags.
+- Python:
+  - `cd python && pip install -r requirements.txt && python -m pytest -v`
+- Clojure (Docker):
+  - `docker run --rm -v "$PWD":/work -w /work clojure:temurin-21-tools-deps clojure -M:test`
 
-2) The main functions are fit_meta_d_mcmc (for fitting individual subject data) and fit_meta_d_mcmc_group (for hierarchical fits of group data). More information is contained in the help of these two functions and in the wiki https://github.com/smfleming/HMM/wiki/HMeta-d-tutorial. To get started try running exampleFit or exampleFit_group. 
+## Phase Summaries
 
-A walkthrough of the model and intuitions behind different usages can be found in Olivia Faull's step-by-step tutorial developed for the Zurich Computational Psychiatry course: https://github.com/metacoglab/HMeta-d/blob/master/CPC_metacog_tutorial/cpc_metacog_tutorial.m
+Phase 1 implements SDT core preparation (`d1`, `c1`, count handling) from MATLAB in Python and Clojure. The key concept is turning script-local calculations into composable pure functions returning structured data. Tests validate known reference values for type-1 measures.
 
-Please get in touch with your experiences with using the toolbox, and any bug reports or issues to me at stephen.fleming@ucl.ac.uk 
+Phase 2 implements type-2 likelihood and Metropolis-Hastings sampling in both languages. The key concept is making MCMC state transitions explicit and testable, rather than implicit in JAGS internals. Tests validate likelihood finiteness/rejection behavior and deterministic seeded sampling behavior within language.
 
-**License**
+Phase 3 implements the group-level hierarchical model as first-class data (`dataclass` in Python, plain map in Clojure). The key concept is model inspectability and non-destructive transformation (`dataclasses.replace`/`assoc-in`) rather than file-editing an external DSL. Tests validate prior behavior, non-destructive model edits, EDN round-trip, and group-fit output structure.
 
-This code is being released with a permissive open-source license. You should feel free to use or adapt the utility code as long as you follow the terms of the license, which are enumerated below. If you use the toolbox in a publication we ask that you cite the following paper:
+## Key Concepts Table
 
-Fleming, S.M. (2017) HMeta-d: hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings, Neuroscience of Consciousness, 3(1) nix007, https://doi.org/10.1093/nc/nix007
+| Concept | MATLAB | Python | Clojure |
+|---|---|---|---|
+| Immutable data | struct (mutable) | frozen dataclass | plain map |
+| Pipeline | sequential statements | function composition | threading macros |
+| MCMC state | hidden in JAGS | explicit loop | lazy sequence |
+| Model spec | .bugs file | dataclass | EDN map + assoc-in |
+| Inverse normal CDF | norminv() | scipy.stats.norm.ppf | r/icdf r/default-normal |
 
-Copyright (c) 2017, Stephen Fleming
+## Citation
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Fleming, S.M. (2017). HMeta-d: hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. *Neuroscience of Consciousness*, 3(1), nix007. [https://doi.org/10.1093/nc/nix007](https://doi.org/10.1093/nc/nix007)
