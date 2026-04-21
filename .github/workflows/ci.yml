@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python-phase2:
+    name: Python Phase 2 Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+        working-directory: python
+
+      - name: Run Phase 2 sampler tests
+        run: python -m pytest test_phase2_sampler.py -v
+        working-directory: python
+
+  clojure-docker:
+    name: Clojure Tests via Docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Clojure tests in Docker
+        run: docker run --rm -v "$PWD":/work -w /work clojure:temurin-21-tools-deps clojure -M:test
