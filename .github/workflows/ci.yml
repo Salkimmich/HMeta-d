@@ -5,8 +5,8 @@ on:
   pull_request:
 
 jobs:
-  python-phase2:
-    name: Python Phase 2 Tests
+  python-tests:
+    name: Python Phase 2 + 3 Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,6 +23,10 @@ jobs:
 
       - name: Run Phase 2 sampler tests
         run: python -m pytest test_phase2_sampler.py -v
+        working-directory: python
+
+      - name: Run Phase 3 hierarchical tests
+        run: python -m pytest test_phase3_hierarchical.py -v
         working-directory: python
 
   clojure-docker:
