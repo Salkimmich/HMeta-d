@@ -26,11 +26,15 @@ Both scripts run:
 - Phase 1: SDT preparation and reference-value checks for type-1 metrics.
 - Phase 2: Type-2 likelihood behavior and sampling invariants (including seeded determinism within language).
 - Phase 3: Hierarchical model structure, non-destructive updates, and serialization behavior.
+- Deterministic posterior-summary regression checks:
+  - Phase 2 chain summaries are compared to `docs/fixtures/posterior_summary_fixture.json`.
+  - Phase 3 group-chain summaries are compared to the same fixture.
 
 ## Tolerance Policy
 
 Numerical tolerance and parity guidance is defined in `docs/math_chain.md`.
 Use those tolerances for cross-language comparison claims.
+Posterior-summary regression tolerances are fixture-local and intentionally small (`0.05`) to catch behavioral drift while allowing expected floating-point variation.
 
 ## Current Limits
 

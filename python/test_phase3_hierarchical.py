@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import dataclasses
+import json
+import pathlib
 
 import numpy as np
 
@@ -21,6 +23,11 @@ SUBJECT_DATA = [
     prepare_sdt_data([36, 24, 17, 20, 10, 12, 34, 22], [21, 19, 23, 28, 33, 28, 20, 19]),
     prepare_sdt_data([30, 20, 18, 22, 12, 10, 36, 24], [22, 18, 24, 26, 30, 26, 22, 20]),
 ]
+
+
+def _load_posterior_fixture() -> dict:
+    fixture_path = pathlib.Path(__file__).resolve().parent.parent / "docs" / "fixtures" / "posterior_summary_fixture.json"
+    return json.loads(fixture_path.read_text(encoding="utf-8"))
 
 
 class TestModelAsData:
@@ -75,3 +82,22 @@ class TestModelAsData:
         chains = fit_group(model, SUBJECT_DATA)
         assert len(chains) == 2
         assert len(chains[0]) == 5
+
+    def test_phase3_posterior_summary_matches_fixture(self):
+        fixture = _load_posterior_fixture()["phase3"]
+        model = HierarchicalModel(
+            group_priors=HMETA_D_GROUP_MODEL.group_priors,
+            mcmc=fixture["mcmc"],
+        )
+        chains = fit_group(model, SUBJECT_DATA)
+        flat = [draw for chain in chains for draw in chain]
+        means = {
+            "mu_logMratio": float(np.mean([draw["mu_logMratio"] for draw in flat])),
+            "sigma_logMratio": float(np.mean([draw["sigma_logMratio"] for draw in flat])),
+            "mu_c2": float(np.mean([draw["mu_c2"] for draw in flat])),
+            "sigma_c2": float(np.mean([draw["sigma_c2"] for draw in flat])),
+        }
+        tol = float(fixture["tolerance"])
+        expected = fixture["expected_means"]
+        for key, expected_value in expected.items():
+            assert np.isclose(means[key], float(expected_value), atol=tol, rtol=0.0)

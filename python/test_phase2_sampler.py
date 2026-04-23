@@ -19,6 +19,11 @@ def _load_parity_fixture() -> dict:
     return json.loads(fixture_path.read_text(encoding="utf-8"))
 
 
+def _load_posterior_fixture() -> dict:
+    fixture_path = pathlib.Path(__file__).resolve().parent.parent / "docs" / "fixtures" / "posterior_summary_fixture.json"
+    return json.loads(fixture_path.read_text(encoding="utf-8"))
+
+
 def _reference_data():
     return prepare_sdt_data(
         [36, 24, 17, 20, 10, 12, 34, 22],
@@ -75,3 +80,26 @@ def test_type2_rates_match_shared_parity_fixture():
     assert np.allclose(rates.hr_s1, np.asarray(expected["hr_s1"], dtype=float), atol=tol, rtol=0.0)
     assert np.allclose(rates.far_s2, np.asarray(expected["far_s2"], dtype=float), atol=tol, rtol=0.0)
     assert np.allclose(rates.hr_s2, np.asarray(expected["hr_s2"], dtype=float), atol=tol, rtol=0.0)
+
+
+def test_phase2_posterior_summary_matches_fixture():
+    fixture = _load_posterior_fixture()["phase2"]
+    data = _reference_data()
+    init = {
+        "meta_d": float(fixture["init"]["meta_d"]),
+        "c2": np.asarray(fixture["init"]["c2"], dtype=float),
+    }
+    chain = mh_chain(
+        init,
+        data,
+        step_size=float(fixture["step_size"]),
+        n_samples=int(fixture["n_samples"]),
+        n_burnin=int(fixture["n_burnin"]),
+        seed=int(fixture["seed"]),
+    )
+    meta_mean = float(np.mean([sample["meta_d"] for sample in chain]))
+    c2_mean = float(np.mean([np.mean(sample["c2"]) for sample in chain]))
+    expected = fixture["expected_means"]
+    tol = float(fixture["tolerance"])
+    assert np.isclose(meta_mean, float(expected["meta_d"]), atol=tol, rtol=0.0)
+    assert np.isclose(c2_mean, float(expected["c2_mean"]), atol=tol, rtol=0.0)
