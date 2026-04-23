@@ -16,14 +16,14 @@ This release completes the MATLAB -> Python -> Clojure teaching translation thro
   - `docs/phase3_concepts.md`
   - `docs/math_chain.md`
 - CI hardening:
-  - Python Phase 2 + 3 tests in GitHub Actions.
+  - Python Phase 1 + 2 + 3 tests in GitHub Actions.
   - Clojure tests executed via Docker in GitHub Actions.
 
 ## Validation
 
-- Local Python tests for Phases 2 and 3 pass.
+- Local Python tests for Phases 1, 2, and 3 pass.
 - Remote CI passes for:
-  - Python Phase 2 + 3
+  - Python Phase 1 + 2 + 3
   - Clojure Docker test suite
 
 ## Teaching Outcome

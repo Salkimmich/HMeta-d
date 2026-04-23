@@ -9,7 +9,7 @@ env:
 
 jobs:
   python-tests:
-    name: Python Phase 2 + 3 Tests
+    name: Python Phase 1 + 2 + 3 Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,7 +21,11 @@ jobs:
           python-version: "3.12"
 
       - name: Install Python dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-lock.txt
+        working-directory: python
+
+      - name: Run Phase 1 SDT tests
+        run: python -m pytest test_phase1_sdt.py -v
         working-directory: python
 
       - name: Run Phase 2 sampler tests

@@ -1,5 +1,7 @@
 (ns hmeta-d.sampler-test
-  (:require [clojure.test :refer [deftest testing is]]
+  (:require [clojure.data.json :as json]
+            [clojure.java.io :as io]
+            [clojure.test :refer [deftest testing is]]
             [hmeta-d.sampler :as sampler]
             [hmeta-d.sdt :as sdt]))
 
@@ -31,3 +33,25 @@
       (is (= 20 (count chain)))
       (is (map? (last chain)))
       (is (contains? (last chain) :meta-d)))))
+
+(deftest type2-parity-fixture-test
+  (testing "Clojure type-2 rates match shared fixture values within tolerance"
+    (let [fixture (-> "docs/fixtures/type2_parity_fixture.json" io/file slurp (json/read-str :key-fn keyword))
+          data (sdt/prepare-sdt-data (:nR_S1 fixture) (:nR_S2 fixture))
+          rates (sampler/estimate-type2-rates (double (:meta_d fixture))
+                                              (:c1 data)
+                                              (mapv double (:c2 fixture))
+                                              (:nratings data))
+          tol (double (:tolerance fixture))
+          expected (:expected_rates fixture)
+          approx? (fn [actual expected]
+                    (and (= (count actual) (count expected))
+                         (every? true?
+                                 (map (fn [a e]
+                                        (<= (Math/abs (- (double a) (double e))) tol))
+                                      actual
+                                      expected))))]
+      (is (approx? (:far-s1 rates) (:far_s1 expected)))
+      (is (approx? (:hr-s1 rates) (:hr_s1 expected)))
+      (is (approx? (:far-s2 rates) (:far_s2 expected)))
+      (is (approx? (:hr-s2 rates) (:hr_s2 expected))))))

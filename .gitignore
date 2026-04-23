@@ -14,3 +14,26 @@ Thumbs.db
 
 # Project ignore
 tmpjags/*
+
+# Python build/test artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+
+# Clojure/JVM artifacts
+.cpcache/
+.nrepl-port
+target/
+classes/
+
+# R session artifacts
+.Rhistory
+.RData

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import pathlib
 import sys
 
@@ -11,6 +12,11 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parent))
 
 from phase1_sdt import prepare_sdt_data
 from phase2_sampler import estimate_type2_rates, log_likelihood, mh_chain
+
+
+def _load_parity_fixture() -> dict:
+    fixture_path = pathlib.Path(__file__).resolve().parent.parent / "docs" / "fixtures" / "type2_parity_fixture.json"
+    return json.loads(fixture_path.read_text(encoding="utf-8"))
 
 
 def _reference_data():
@@ -52,3 +58,20 @@ def test_mh_chain_runs_deterministically_with_seed():
     assert len(chain_b) == 20
     assert chain_a[-1]["meta_d"] == chain_b[-1]["meta_d"]
     assert np.allclose(chain_a[-1]["c2"], chain_b[-1]["c2"])
+
+
+def test_type2_rates_match_shared_parity_fixture():
+    fixture = _load_parity_fixture()
+    data = prepare_sdt_data(fixture["nR_S1"], fixture["nR_S2"])
+    rates = estimate_type2_rates(
+        meta_d=float(fixture["meta_d"]),
+        c1=data.c1,
+        c2=np.asarray(fixture["c2"], dtype=float),
+        nratings=data.nratings,
+    )
+    tol = float(fixture["tolerance"])
+    expected = fixture["expected_rates"]
+    assert np.allclose(rates.far_s1, np.asarray(expected["far_s1"], dtype=float), atol=tol, rtol=0.0)
+    assert np.allclose(rates.hr_s1, np.asarray(expected["hr_s1"], dtype=float), atol=tol, rtol=0.0)
+    assert np.allclose(rates.far_s2, np.asarray(expected["far_s2"], dtype=float), atol=tol, rtol=0.0)
+    assert np.allclose(rates.hr_s2, np.asarray(expected["hr_s2"], dtype=float), atol=tol, rtol=0.0)

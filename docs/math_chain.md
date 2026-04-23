@@ -67,6 +67,8 @@ est_HR2_rS1(i)  = C_HR_area_rS1 / C_area_rS1;
 
 `est_FAR2_rS1(i)`: probability of response `S1` at confidence rating `i` given stimulus `S2`, computed as the incorrect `S1` area below `t2c1_lower` normalised by the total incorrect `S1` response area below `c1`.
 
+The following language blocks are API-shape pseudocode for concept mapping only. Executable implementations live in `python/phase2_sampler.py` and `src/hmeta_d/sampler.clj`.
+
 ```python
 def type2_hr_rS2(meta_d: float, c1: float, c2: np.ndarray, k: int) -> float:
     """

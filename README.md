@@ -1,6 +1,18 @@
 # HMeta-d Translation Lab
 
+[![CI](https://github.com/Salkimmich/HMeta-d/actions/workflows/ci.yml/badge.svg)](https://github.com/Salkimmich/HMeta-d/actions/workflows/ci.yml)
+
 This repository ports HMeta-d across three language generations (MATLAB -> Python -> Clojure) as a functional programming teaching vehicle. The original methodological reference is Fleming (2017), which introduces hierarchical Bayesian estimation of metacognitive efficiency ([doi:10.1093/nc/nix007](https://doi.org/10.1093/nc/nix007)).
+
+## Project Summary
+
+HMeta-d Translation Lab is a cross-language reconstruction of the core HMeta-d workflow, moving from MATLAB reference scripts to explicit Python and Clojure implementations. The project scope covers three phases: SDT preparation, type-2 likelihood plus MCMC, and hierarchical model-as-data representation. CI and local validation scripts prove that both language tracks remain testable and reproducible. This repository is designed as an inspectable engineering artifact and learning resource, not as a full replacement for every upstream toolbox workflow.
+
+## Non-Goals
+
+- Not a drop-in replacement for all MATLAB/JAGS tooling in the original ecosystem.
+- Not a claim of byte-identical cross-language MCMC chain trajectories.
+- Not a packaged end-user application; this is a code-first reference and validation repo.
 
 Moving from MATLAB to Python teaches the shift from opaque external model execution (JAGS + imperative scripts) to explicit functions and inspectable data structures. In this repository, Phase 1 and Phase 2 make SDT and MCMC state visible instead of hidden behind a JAGS call.
 
@@ -105,7 +117,7 @@ Path note:
 
 ```bash
 cd python
-pip install -r requirements.txt
+pip install -r requirements-lock.txt
 python -m pytest -v
 ```
 
@@ -114,7 +126,14 @@ python -m pytest -v
 From repository root:
 
 ```bash
+# One-command CI-equivalent validation (PowerShell)
+powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1
+
+# One-command CI-equivalent validation (macOS/Linux)
+bash ./scripts/validate.sh
+
 # Python phase gates
+cd python && python -m pytest test_phase1_sdt.py -v
 cd python && python -m pytest test_phase2_sampler.py -v
 cd python && python -m pytest test_phase3_hierarchical.py -v
 
@@ -125,6 +144,7 @@ docker run --rm -v "$PWD":/work -w /work clojure:temurin-21-tools-deps clojure -
 PowerShell equivalent:
 
 ```powershell
+cd python; python -m pytest test_phase1_sdt.py -v
 cd python; python -m pytest test_phase2_sampler.py -v
 cd python; python -m pytest test_phase3_hierarchical.py -v
 cd ..; docker run --rm -v ${PWD}:/work -w /work clojure:temurin-21-tools-deps clojure -M:test
@@ -134,7 +154,7 @@ cd ..; docker run --rm -v ${PWD}:/work -w /work clojure:temurin-21-tools-deps cl
 
 This repository includes GitHub Actions CI that runs:
 
-- Python Phase 2 + 3 tests
+- Python Phase 1 + 2 + 3 tests
 - Clojure tests in Docker
 
 Use CI status as the strict validation path on machines where virtualization is restricted.
@@ -142,7 +162,7 @@ Use CI status as the strict validation path on machines where virtualization is 
 ## Running The Code
 
 - Python:
-  - `cd python && pip install -r requirements.txt && python -m pytest -v`
+  - `cd python && pip install -r requirements-lock.txt && python -m pytest -v`
 - Clojure (Docker):
   - `docker run --rm -v "$PWD":/work -w /work clojure:temurin-21-tools-deps clojure -M:test`
 
@@ -170,21 +190,25 @@ Phase 3 implements the group-level hierarchical model as first-class data (`data
 - `docs/phase1_concepts.md`: SDT core translation concepts.
 - `docs/phase2_concepts.md`: likelihood + explicit MCMC concepts.
 - `docs/phase3_concepts.md`: hierarchical model-as-data concepts.
+- `docs/ARCHITECTURE.md`: module/data-flow overview for fast reviewer onboarding.
+- `docs/VALIDATION.md`: exact meaning of each test gate and tolerance policy.
 
-## Contributing Workflow
+## Contributing
 
-1. Create a branch from `master`.
-2. Implement or update one phase-concept chunk at a time.
-3. Run local tests relevant to your changes:
-   - Python: `cd python && python -m pytest -v`
-   - Clojure: `docker run --rm -v "$PWD":/work -w /work clojure:temurin-21-tools-deps clojure -M:test`
-4. Push branch and open a pull request.
-5. Wait for CI to pass before merge.
+Use `CONTRIBUTING.md` for full workflow and review expectations. Minimum local gate:
+
+- Windows PowerShell: `powershell -ExecutionPolicy Bypass -File .\scripts\validate.ps1`
+- macOS/Linux: `bash ./scripts/validate.sh`
+
+Community and project policies:
+
+- `SECURITY.md`
+- `CODE_OF_CONDUCT.md`
 
 ## Troubleshooting
 
 - **`No module named pytest` in CI/local**  
-  Ensure `pip install -r python/requirements.txt` was run.
+  Ensure `pip install -r python/requirements-lock.txt` was run.
 - **Docker fails to start on Windows**  
   Check firmware virtualization and Docker Desktop engine status.
 - **Clojure test errors about fastmath vars**  
@@ -193,3 +217,12 @@ Phase 3 implements the group-level hierarchical model as first-class data (`data
 ## Citation
 
 Fleming, S.M. (2017). HMeta-d: hierarchical Bayesian estimation of metacognitive efficiency from confidence ratings. *Neuroscience of Consciousness*, 3(1), nix007. [https://doi.org/10.1093/nc/nix007](https://doi.org/10.1093/nc/nix007)
+
+## License and Provenance
+
+This repository is released under the [MIT License](LICENSE). It is a translation and engineering documentation project derived from established HMeta-d methodological and code lineage, with added Python/Clojure implementations, tests, and CI workflows for transparent cross-language study.
+
+Python dependency policy:
+
+- `python/requirements.txt` defines minimum compatible versions.
+- `python/requirements-lock.txt` defines pinned CI/local validation versions.
