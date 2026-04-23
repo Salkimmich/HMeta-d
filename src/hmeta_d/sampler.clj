@@ -1,4 +1,5 @@
 (ns hmeta-d.sampler
+  (:import [java.util Random])
   (:require [fastmath.random :as r]))
 
 ;; MATLAB: type-2 likelihood equations live inside fit_meta_d_mcmc.m / JAGS model.
@@ -107,17 +108,18 @@
    Python: mh_chain loops proposals over parameter dicts.
    Clojure: explicit MH transition over immutable parameter maps."
   [init-params data-or-cfg step-size]
-  (let [rng (r/rng :jdk 0)
+  (let [rng (Random. 0)
         {:keys [n-samples n-burnin] :or {n-samples 1000 n-burnin 0}} (:mcmc data-or-cfg)
         log-post (if-let [lp (:log-posterior data-or-cfg)]
                    lp
                    (fn [p] (+ (log-prior p data-or-cfg) (log-likelihood p data-or-cfg))))
+        gaussian-step (fn [] (* step-size (.nextGaussian rng)))
         draw-proposal (fn [params]
                         (reduce-kv (fn [m k v]
                                      (assoc m k
                                             (if (vector? v)
-                                              (mapv #(+ % (r/grand rng step-size)) v)
-                                              (+ v (r/grand rng step-size)))))
+                                              (mapv #(+ (double %) (gaussian-step)) v)
+                                              (+ (double v) (gaussian-step)))))
                                    {}
                                    params))
         total-iters (+ n-samples n-burnin)]
@@ -130,7 +132,7 @@
         (let [proposal (draw-proposal current)
               proposal-lp (double (log-post proposal))
               accept? (and (Double/isFinite proposal-lp)
-                           (< (Math/log (r/drand rng)) (- proposal-lp current-lp)))
+                           (< (Math/log (max 1e-300 (.nextDouble rng))) (- proposal-lp current-lp)))
               next-state (if accept? proposal current)
               next-lp (if accept? proposal-lp current-lp)
               out' (if (>= iter n-burnin) (conj out next-state) out)]
