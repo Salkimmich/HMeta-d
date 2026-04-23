@@ -1,5 +1,6 @@
 (ns hmeta-d.hierarchical
   "Phase 3: Hierarchical model as plain data."
+  (:import [java.util Random])
   (:require [fastmath.random :as r]
             [hmeta-d.sampler :as sampler]))
 
@@ -49,17 +50,17 @@
    Clojure: reduce over subject data with sampled subject latents."
   [group-params subject-data]
   (let [seed (long (get group-params :seed 0))
-        rng (r/rng :jdk seed)
+        rng (Random. seed)
         mu (:mu-logMratio group-params)
         sigma (:sigma-logMratio group-params)
         mu-c2 (:mu-c2 group-params)
         sigma-c2 (max 1e-6 (:sigma-c2 group-params))]
     (reduce
      (fn [acc data]
-       (let [log-mratio (r/sample rng (r/distribution :normal {:mu mu :sd sigma}))
+       (let [log-mratio (+ mu (* sigma (.nextGaussian rng)))
              mratio (Math/exp log-mratio)
              meta-d (* mratio (:d1 data))
-             c2 (mapv (fn [_] (Math/abs (r/sample rng (r/distribution :normal {:mu mu-c2 :sd sigma-c2}))))
+             c2 (mapv (fn [_] (Math/abs (+ mu-c2 (* sigma-c2 (.nextGaussian rng)))))
                       (range (dec (:nratings data))))
              ll (sampler/log-likelihood {:meta-d meta-d :c2 c2} data)]
          (+ acc ll)))
